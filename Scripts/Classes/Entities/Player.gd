@@ -12,7 +12,7 @@ var BOUNCE_HEIGHT := 200.0             # The strength at which the player bounce
 var BOUNCE_JUMP_HEIGHT := 300.0        # The strength at which the player bounces off enemies while holding jump, measured in px/sec 
 
 var FALL_GRAVITY := 25.0               # The player's gravity while falling, measured in px/frame
-var MAX_FALL_SPEED := 280              # The player's maximum fall speed, measured in px/sec
+var MAX_FALL_SPEED := 280.0            # The player's maximum fall speed, measured in px/sec
 var CEILING_BUMP_SPEED := 45.0         # The speed at which the player falls after hitting a ceiling, measured in px/sec
 
 var WALK_SPEED := 96.0                 # The player's speed while walking, measured in px/sec
@@ -31,9 +31,9 @@ var SWIM_SPEED := 95.0                 # The player's horizontal speed while swi
 var SWIM_GROUND_SPEED := 45.0          # The player's horizontal speed while grounded underwater, measured in px/sec
 var SWIM_HEIGHT := 100.0               # The strength of the player's swim, measured in px/sec
 var SWIM_GRAVITY := 2.5                # The player's gravity while swimming, measured in px/frame
-var MAX_SWIM_FALL_SPEED := 200         # The player's maximum fall speed while swimming, measured in px/sec
+var MAX_SWIM_FALL_SPEED := 200.0         # The player's maximum fall speed while swimming, measured in px/sec
 
-var DEATH_JUMP_HEIGHT := 300           # The strength of the player's "jump" during the death animation, measured in px/sec
+var DEATH_JUMP_HEIGHT := 300.0           # The strength of the player's "jump" during the death animation, measured in px/sec
 #endregion
 
 #region Custom moveset options, can be toggled/modified within a custom character's CharacterInfo.json
@@ -395,9 +395,9 @@ func is_actually_on_ceiling() -> bool:
 				return true
 	return false
 
-func enemy_bounce_off(add_combo := true) -> void:
+func enemy_bounce_off(add_combo := true, award_score := true) -> void:
 	if add_combo:
-		add_stomp_combo()
+		add_stomp_combo(award_score)
 	if is_pounding:
 		return
 	jump_cancelled = not Global.player_action_pressed("jump", player_id)
@@ -409,18 +409,20 @@ func enemy_bounce_off(add_combo := true) -> void:
 	else:
 		velocity.y = sign(gravity_vector.y) * -BOUNCE_HEIGHT
 
-func add_stomp_combo() -> void:
+func add_stomp_combo(award_score := true) -> void:
 	if stomp_combo >= 10:
-		if Global.current_game_mode == Global.GameMode.CHALLENGE or Settings.file.difficulty.inf_lives:
-			Global.score += 10000
-			score_note_spawner.spawn_note(10000)
-		else:
-			Global.lives += 1
-			AudioManager.play_global_sfx("1_up")
-			score_note_spawner.spawn_one_up_note()
+		if award_score:
+			if Global.current_game_mode == Global.GameMode.CHALLENGE or Settings.file.difficulty.inf_lives:
+				Global.score += 10000
+				score_note_spawner.spawn_note(10000)
+			else:
+				Global.lives += 1
+				AudioManager.play_global_sfx("1_up")
+				score_note_spawner.spawn_one_up_note()
 	else:
-		Global.score += COMBO_VALS[stomp_combo]
-		score_note_spawner.spawn_note(COMBO_VALS[stomp_combo])
+		if award_score:
+			Global.score += COMBO_VALS[stomp_combo]
+			score_note_spawner.spawn_note(COMBO_VALS[stomp_combo])
 		stomp_combo += 1
 
 func bump_ceiling() -> void:
@@ -555,6 +557,7 @@ func die(pit := false) -> void:
 	Global.p_switch_active = false
 	Global.p_switch_timer = 0
 	stop_all_timers()
+	sprite.process_mode = Node.PROCESS_MODE_ALWAYS
 	state_machine.transition_to("Dead", {"Pit": pit})
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	get_tree().paused = true
@@ -572,35 +575,56 @@ func die(pit := false) -> void:
 func death_load() -> void:
 	power_state = get_node("PowerStates/Small")
 	Global.player_power_states = "0000"
+
 	if Global.death_load:
 		return
 	Global.death_load = true
-	if Global.current_game_mode == Global.GameMode.CUSTOM_LEVEL:
-		LevelTransition.level_to_transition_to = "res://Scenes/Levels/LevelEditor.tscn"
-		Global.transition_to_scene("res://Scenes/Levels/LevelTransition.tscn")
-		return
-	if Global.current_game_mode == Global.GameMode.LEVEL_EDITOR:
-		owner.stop_testing()
-		return
+
+	# Handle lives decrement for CAMPAIGN and MARATHON
 	if [Global.GameMode.CAMPAIGN, Global.GameMode.MARATHON].has(Global.current_game_mode):
 		if Settings.file.difficulty.inf_lives == 0:
 			Global.lives -= 1
-	Global.death_load = true
-	if Global.current_game_mode == Global.GameMode.CHALLENGE:
-		Global.transition_to_scene("res://Scenes/Levels/ChallengeMiss.tscn")
-	elif Global.time <= 0:
-		Global.transition_to_scene("res://Scenes/Levels/TimeUp.tscn")
-	elif Global.lives <= 0 and Settings.file.difficulty.inf_lives == 0:
-		Global.death_load = false
-		Global.transition_to_scene("res://Scenes/Levels/GameOver.tscn")
-	else:
-		LevelPersistance.reset_states()
-		if Global.current_game_mode == Global.GameMode.BOO_RACE:
+
+	# Full dispatch table for death handling
+	var death_actions = {
+		Global.GameMode.CUSTOM_LEVEL: func():
+			LevelTransition.level_to_transition_to = "res://Scenes/Levels/LevelEditor.tscn"
+			Global.transition_to_scene("res://Scenes/Levels/LevelTransition.tscn"),
+
+		Global.GameMode.LEVEL_EDITOR: func():
+			owner.stop_testing(),
+
+		Global.GameMode.CHALLENGE: func():
+			Global.transition_to_scene("res://Scenes/Levels/ChallengeMiss.tscn"),
+
+		Global.GameMode.BOO_RACE: func():
 			Global.reset_values()
 			Global.clear_saved_values()
 			Global.death_load = false
 			Level.start_level_path = Global.current_level.scene_file_path
-		Global.current_level.reload_level()
+			Global.current_level.reload_level(),
+
+		"time_up": func():
+			Global.transition_to_scene("res://Scenes/Levels/TimeUp.tscn"),
+
+		"game_over": func():
+			Global.death_load = false
+			Global.transition_to_scene("res://Scenes/Levels/GameOver.tscn"),
+
+		"default_reload": func():
+			LevelPersistance.reset_states()
+			Global.current_level.reload_level()
+	}
+
+	# Determine which action to take
+	if death_actions.has(Global.current_game_mode):
+		death_actions[Global.current_game_mode].call()
+	elif Global.time <= 0:
+		death_actions["time_up"].call()
+	elif Global.lives <= 0 and Settings.file.difficulty.inf_lives == 0:
+		death_actions["game_over"].call()
+	else:
+		death_actions["default_reload"].call()
 
 func time_up() -> void:
 	die()
@@ -680,7 +704,7 @@ func power_up_animation(new_power_state := "") -> void:
 			await get_tree().create_timer(0.6).timeout
 			transforming = false
 	get_tree().paused = false
-	sprite.process_mode = Node.PROCESS_MODE_PAUSABLE
+	sprite.process_mode = Node.PROCESS_MODE_INHERIT
 	if Global.player_action_just_pressed("jump", player_id):
 		jump()
 	return
