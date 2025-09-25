@@ -8,7 +8,7 @@ var GROUNDED_LENIENCY := 0.03
 
 var ground_collision: Area2D
 
-func enter(msg := {}) -> void:
+func vanilla_1636678603_enter(msg := {}) -> void:
 	player.velocity = Vector2.ZERO
 	player.velocity.y = -player.GROUND_POUND_HANG_SPEED * player.gravity_vector.y
 	player.is_pounding = true
@@ -20,7 +20,7 @@ func enter(msg := {}) -> void:
 	
 	AudioManager.play_sfx("ground_pound_start", player.global_position)
 
-func physics_update(_delta: float) -> void:
+func vanilla_1636678603_physics_update(_delta: float) -> void:
 	player.play_animation("GroundPound")
 	
 	if is_hanging:
@@ -58,5 +58,29 @@ func physics_update(_delta: float) -> void:
 	
 	player.move_and_slide()
 
-func exit() -> void:
+func vanilla_1636678603_exit() -> void:
 	player.is_pounding = false
+
+
+# ModLoader Hooks - The following code has been automatically added by the Godot Mod Loader.
+
+
+func enter(msg: ={}):
+	if _ModLoaderHooks.any_mod_hooked:
+		_ModLoaderHooks.call_hooks(vanilla_1636678603_enter, [msg], 2000931369)
+	else:
+		vanilla_1636678603_enter(msg)
+
+
+func physics_update(_delta: float):
+	if _ModLoaderHooks.any_mod_hooked:
+		_ModLoaderHooks.call_hooks(vanilla_1636678603_physics_update, [_delta], 4050769776)
+	else:
+		vanilla_1636678603_physics_update(_delta)
+
+
+func exit():
+	if _ModLoaderHooks.any_mod_hooked:
+		_ModLoaderHooks.call_hooks(vanilla_1636678603_exit, [], 2793805829)
+	else:
+		vanilla_1636678603_exit()

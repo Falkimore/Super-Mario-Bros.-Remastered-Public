@@ -26,14 +26,14 @@ signal item_changed
 signal block_emptied
 signal block_destroyed
 
-func _enter_tree() -> void:
+func vanilla_512347170__enter_tree() -> void:
 	z_index = start_z
 	sync_to_physics = false
 	if item != null:
 		if item.resource_path.contains(Global.current_level.scene_file_path):
 			Global.log_error("ITEM SCENE IS NULL! BLOCK NAME: " + str(name) + " PLEASE REPORT!")
 
-func dispense_item() -> void:
+func vanilla_512347170_dispense_item() -> void:
 	if can_hit == false:
 		return
 	can_hit = false
@@ -74,12 +74,12 @@ func dispense_item() -> void:
 	if item_amount <= 0:
 		spawn_empty_block()
 
-func player_mushroom_check(player: Player = null) -> PackedScene:
+func vanilla_512347170_player_mushroom_check(player: Player = null) -> PackedScene:
 	if player.power_state.hitbox_size == "Small" and mushroom_if_small:
 		return load(SUPER_MUSHROOM)
 	return item
 
-func spawn_empty_block() -> void:
+func vanilla_512347170_spawn_empty_block() -> void:
 	var block = load(EMPTY_BLOCK).instantiate()
 	block.position = position
 	add_sibling(block)
@@ -88,7 +88,7 @@ func spawn_empty_block() -> void:
 	block_emptied.emit()
 	queue_free()
 
-func destroy() -> void:
+func vanilla_512347170_destroy() -> void:
 	block_destroyed.emit()
 	DiscoLevel.combo_meter += combo_meter_amount
 	AudioManager.play_sfx("block_break", global_position)
@@ -96,3 +96,41 @@ func destroy() -> void:
 	particles.global_position = global_position
 	add_sibling(particles)
 	queue_free()
+
+
+# ModLoader Hooks - The following code has been automatically added by the Godot Mod Loader.
+
+
+func _enter_tree():
+	if _ModLoaderHooks.any_mod_hooked:
+		_ModLoaderHooks.call_hooks(vanilla_512347170__enter_tree, [], 1713566318)
+	else:
+		vanilla_512347170__enter_tree()
+
+
+func dispense_item():
+	if _ModLoaderHooks.any_mod_hooked:
+		await _ModLoaderHooks.call_hooks_async(vanilla_512347170_dispense_item, [], 2217338891)
+	else:
+		await vanilla_512347170_dispense_item()
+
+
+func player_mushroom_check(player: Player=null) -> PackedScene:
+	if _ModLoaderHooks.any_mod_hooked:
+		return _ModLoaderHooks.call_hooks(vanilla_512347170_player_mushroom_check, [player], 2204865637)
+	else:
+		return vanilla_512347170_player_mushroom_check(player)
+
+
+func spawn_empty_block():
+	if _ModLoaderHooks.any_mod_hooked:
+		_ModLoaderHooks.call_hooks(vanilla_512347170_spawn_empty_block, [], 40011875)
+	else:
+		vanilla_512347170_spawn_empty_block()
+
+
+func destroy():
+	if _ModLoaderHooks.any_mod_hooked:
+		_ModLoaderHooks.call_hooks(vanilla_512347170_destroy, [], 646309484)
+	else:
+		vanilla_512347170_destroy()
