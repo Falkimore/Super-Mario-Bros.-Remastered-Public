@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=4 uid="uid://bsn6rqktg44fr"]
+[gd_scene load_steps=13 format=4 uid="uid://bsn6rqktg44fr"]
 
 [ext_resource type="Script" uid="uid://bcqr1v25ygedb" path="res://Scripts/Classes/LevelClass.gd" id="1_tbbkm"]
 [ext_resource type="PackedScene" uid="uid://ct5rrpa7uehkk" path="res://Scenes/Parts/Tiles.tscn" id="2_khyrv"]
@@ -6,6 +6,31 @@
 [ext_resource type="PackedScene" uid="uid://cuh62hlq8errh" path="res://Scenes/Prefabs/Entities/Player.tscn" id="4_0haqu"]
 [ext_resource type="PackedScene" uid="uid://dam4dqebjgk1n" path="res://Scenes/Prefabs/Entities/Objects/RedKoopaShell.tscn" id="5_bcat1"]
 [ext_resource type="PackedScene" uid="uid://bowadxqfmg636" path="res://Scenes/Prefabs/Entities/Objects/GreenKoopaShell.tscn" id="6_0haqu"]
+[ext_resource type="Script" uid="uid://crsejaxbaluhf" path="res://Scripts/Parts/WaterArea.gd" id="7_0haqu"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_43hak"]
+radius = 32.0
+
+[sub_resource type="Gradient" id="Gradient_0haqu"]
+offsets = PackedFloat32Array(0.97512436, 1)
+colors = PackedColorArray(0.44313726, 0.44313726, 1, 0.7294118, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_43hak"]
+gradient = SubResource("Gradient_0haqu")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_0haqu"]
+radius = 48.0
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_ooxby"]
+gradient = SubResource("Gradient_0haqu")
+width = 96
+height = 96
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0.5, 0)
 
 [node name="Level" type="Node"]
 script = ExtResource("1_tbbkm")
@@ -26,6 +51,30 @@ position = Vector2(40, 0)
 [node name="GreenKoopaShell" parent="." instance=ExtResource("6_0haqu")]
 position = Vector2(64, 0)
 
+[node name="WaterArea" type="Area2D" parent="."]
+position = Vector2(208, -64)
+script = ExtResource("7_0haqu")
+metadata/_custom_type_script = "uid://crsejaxbaluhf"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WaterArea"]
+shape = SubResource("CircleShape2D_43hak")
+
+[node name="Sprite2D" type="Sprite2D" parent="WaterArea"]
+texture = SubResource("GradientTexture2D_43hak")
+
+[node name="WaterArea2" type="Area2D" parent="."]
+position = Vector2(292, -108)
+script = ExtResource("7_0haqu")
+metadata/_custom_type_script = "uid://crsejaxbaluhf"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="WaterArea2"]
+shape = SubResource("CircleShape2D_0haqu")
+
+[node name="Sprite2D" type="Sprite2D" parent="WaterArea2"]
+texture = SubResource("GradientTexture2D_ooxby")
+
+[connection signal="block_destroyed" from="Tiles/QuestionBlock" to="Tiles/QuestionBlock/LevelPersistance" method="set_as_active_2"]
+[connection signal="block_emptied" from="Tiles/QuestionBlock" to="Tiles/QuestionBlock/LevelPersistance" method="set_as_active"]
 [connection signal="player_block_hit" from="Tiles/QuestionBlock" to="Tiles/QuestionBlock" method="player_mushroom_check"]
 [connection signal="player_block_hit" from="Tiles/QuestionBlock" to="Tiles/QuestionBlock" method="dispense_item" unbinds=1]
 [connection signal="player_block_hit" from="Tiles/QuestionBlock" to="Tiles/QuestionBlock/BlockAnimations" method="bounce_block" unbinds=1]
