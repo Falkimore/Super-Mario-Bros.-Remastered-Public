@@ -75,7 +75,7 @@ func _ready() -> void:
 	
 	if Global.current_game_mode == Global.GameMode.CAMPAIGN:
 		SaveManager.write_save(Global.current_campaign)
-	Global.set_discord_status("Playing " + Global.current_campaign + ": " + str(world_num) + "-" + str(Global.level_num))
+	DiscordManager.set_discord_status("Playing " + Global.current_campaign + ": " + str(world_num) + "-" + str(Global.level_num))
 	$BG/Control/WorldNum.text = str(world_num) +"-" + str(Global.level_num)
 	if Settings.file.difficulty.inf_lives:
 		$BG/Control/LivesCount.text = "*  ∞"
@@ -113,7 +113,7 @@ func show_best_time() -> void:
 
 func _process(_delta: float) -> void:
 	if can_transition:
-		if Input.is_action_just_pressed("jump_0"):
+		if Input.is_action_just_pressed("ui_accept"):
 			transition()
 
 func _exit_tree() -> void:

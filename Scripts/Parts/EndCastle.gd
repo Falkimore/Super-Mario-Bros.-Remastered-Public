@@ -39,6 +39,19 @@ func _process(_delta: float) -> void:
 	if get_node_or_null("Wall") != null:
 		%Wall.visible = show_walls
 
+func _physics_process(_delta: float) -> void:
+	for i: Player in get_tree().get_nodes_in_group("Players"):
+		if i.can_pose and i.global_position >= global_position and i.sprite.sprite_frames.has_animation("PoseDoor"):
+			i.is_posing = true; i.can_pose = false
+			i.global_position = global_position
+			i.play_animation("PoseDoor")
+			i.sprite.animation_finished.connect(on_pose_finished.bind(i))
+			i.sprite.animation_looped.connect(on_pose_finished.bind(i))
+
+func on_pose_finished(player: Player) -> void:
+	player.is_posing = false
+	player.z_index = -2
+
 func on_music_finished() -> void:
 	do_sequence()
 
@@ -69,12 +82,12 @@ func do_lost_levels_firework_check() -> void:
 	if coin_digit == time_digit:
 		if coin_digit % 2 == 0:
 			await show_fireworks(6)
-			if coin_digit % 11 == 0:
-				spawn_one_up_note()
-				AudioManager.play_sfx("1_up", global_position)
-				Global.lives += 1
 		else:
 			await show_fireworks(3)
+		if Global.coins % 11 == 0:
+			spawn_one_up_note()
+			AudioManager.play_sfx("1_up", global_position)
+			Global.lives += 1
 
 const ONE_UP_NOTE = preload("uid://dopxwjj37gu0l")
 

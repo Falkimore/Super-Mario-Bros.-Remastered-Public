@@ -1,6 +1,6 @@
 extends Node
 
-const SAVE_DIR := "user://saves/CAMPAIGN.sav"
+var SAVE_DIR : String = Global.config_path.path_join("saves/CAMPAIGN.sav")
 
 var visited_levels := "1000000000000000000000000000000010000000000000000000"
 
@@ -43,7 +43,8 @@ const SAVE_TEMPLATE := {
 		-1.0, -1.0, -1.0, -1.0
 	],
 	"HighScore": 0,
-	"ExtraWorldWin": false
+	"ExtraWorldWin": false,
+	"CurrentQuest": 1
 }
 
 
@@ -70,20 +71,18 @@ func write_save(campaign: String = Global.current_campaign, force := false) -> v
 	if Global.debugged_in and not force:
 		return
 	var save = null
-	DirAccess.make_dir_recursive_absolute("user://saves")
-	DirAccess.make_dir_recursive_absolute("user://resource_packs")
-	DirAccess.make_dir_recursive_absolute("user://custom_characters")
-	DirAccess.make_dir_recursive_absolute("user://custom_levels")
 	var save_json = {}
-	var path = "user://saves/" + campaign + ".sav"
+	var path = Global.config_path.path_join("saves/" + campaign + ".sav")
 	if FileAccess.file_exists(path):
-		save = FileAccess.open("user://saves/" + campaign + ".sav", FileAccess.READ)
+		save = FileAccess.open(path, FileAccess.READ)
 		save_json = JSON.parse_string(save.get_as_text())
 		save.close()
 	else:
 		save_json = SAVE_TEMPLATE.duplicate(true)
 	match Global.current_game_mode:
 		Global.GameMode.CAMPAIGN:
+			if Global.world_num < 0:
+				Global.world_num = 1
 			if Global.high_score < Global.score:
 				Global.high_score = Global.score
 			save_json["World"] = Global.world_num
@@ -95,6 +94,7 @@ func write_save(campaign: String = Global.current_campaign, force := false) -> v
 			save_json["LevelsVisited"] = visited_levels
 			save_json["HighScore"] = Global.high_score
 			save_json["ExtraWorldWin"] = Global.extra_worlds_win
+			save_json["SecondQuest"] = Global.second_quest
 		Global.GameMode.CHALLENGE:
 			save_json["ChallengeScores"] = ChallengeModeHandler.top_challenge_scores
 			save_json["RedCoins"] = ChallengeModeHandler.red_coins_collected
@@ -137,6 +137,7 @@ func apply_save(json := {}) -> void:
 		DiscoLevel.level_ranks = json.get("Ranks")
 	if json.has("BooBestTimes"):
 		BooRaceHandler.best_times = json.get("BooBestTimes").duplicate()
+	Global.second_quest = json.get("SecondQuest", false)
 
 func clear_save() -> void:
 	for i in [BooRaceHandler.cleared_boo_levels, ChallengeModeHandler.top_challenge_scores, ChallengeModeHandler.red_coins_collected, visited_levels]:
@@ -147,7 +148,8 @@ func clear_save() -> void:
 	visited_levels[0][0] = "1"
 	var save = SAVE_TEMPLATE.duplicate(true)
 	apply_save(save)
-	DirAccess.remove_absolute("user://saves/" + Global.current_campaign + ".sav")
+	var save_path = Global.config_path.path_join("saves" + Global.current_campaign + ".sav")
+	DirAccess.remove_absolute(save_path)
 	write_save(Global.current_campaign)
 
 func clear_array(arr := []) -> void:
@@ -169,9 +171,10 @@ func get_level_idx(world_num := 1, level_num := 1) -> int:
 	return ((world_num - 1) * 4) + (level_num - 1)
 
 func load_achievements() -> void:
-	if FileAccess.file_exists("user://achievements.sav") == false:
+	var path = Global.config_path.path_join("achievements.sav")
+	if FileAccess.file_exists(path) == false:
 		write_achievements()
-	var file = FileAccess.open("user://achievements.sav", FileAccess.READ)
+	var file = FileAccess.open(path, FileAccess.READ)
 	var idx := 0
 	for i in file.get_as_text():
 		Global.achievements[idx] = i
@@ -180,6 +183,7 @@ func load_achievements() -> void:
 	file.close()
 
 func write_achievements() -> void:
-	var file = FileAccess.open("user://achievements.sav", FileAccess.WRITE)
+	var path = Global.config_path.path_join("achievements.sav")
+	var file = FileAccess.open(path, FileAccess.WRITE)
 	file.store_string(Global.achievements)
 	file.close()
